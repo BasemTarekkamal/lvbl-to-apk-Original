@@ -17,24 +17,22 @@ jobs:
       - name: Setup Runner
         uses: actions/checkout@v4
 
-      # ---------------------------------------------------------
-      # FIX: Updated to Node.js 22 to satisfy Capacitor requirements
-      # ---------------------------------------------------------
+      # Used Node 22 (Required by latest Capacitor)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      # FIX: Updated to Java 21 to fix "invalid source release: 21"
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Clone Your Lovable Code
         run: |
           echo "Cloning from: ${{ inputs.git_repo }}"
-          # We clone into a folder named 'source_code'
           git clone ${{ inputs.git_repo }} source_code
 
       - name: Install Dependencies
