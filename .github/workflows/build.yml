@@ -1,74 +1,81 @@
-name: Build APK from Lovable GitHub
+name: Build Native Offline APK
 
 on:
   workflow_dispatch:
     inputs:
       git_repo:
-        description: 'Paste your Lovable GitHub URL here (e.g., https://github.com/BasemTarekkamal/clinc-os)'
+        description: 'Your Lovable GitHub URL'
         required: true
-        type: string
+        default: 'https://github.com/BasemTarekkamal/clinc-os'
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Native APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Setup Runner
         uses: actions/checkout@v4
 
-      # Used Node 22 (Required by latest Capacitor)
-      - name: Setup Node.js
+      - name: Setup Node.js (v22)
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      # FIX: Updated to Java 21 to fix "invalid source release: 21"
-      - name: Setup Java
+      - name: Setup Java (JDK 21)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Clone Your Lovable Code
+      - name: Clone Repository
         run: |
-          echo "Cloning from: ${{ inputs.git_repo }}"
           git clone ${{ inputs.git_repo }} source_code
 
       - name: Install Dependencies
         working-directory: ./source_code
         run: npm install
 
-      - name: Build Web App
+      - name: Build Web Assets (Vite)
         working-directory: ./source_code
+        # This creates the 'dist' folder with your actual HTML/JS/CSS
         run: npm run build
 
-      - name: Initialize Capacitor (Native Wrapper)
+      - name: ☢️ NUKE OLD CONFIG & FORCE LOCAL ☢️
         working-directory: ./source_code
         run: |
-          # Install Capacitor core packages
+          # 1. DELETE existing config that might point to the live URL
+          rm -f capacitor.config.ts capacitor.config.json
+
+          # 2. Install Capacitor packages if missing
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          # Initialize Capacitor if not already done
-          if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
-            npx cap init "Clinic OS" "com.lovable.clincos" --web-dir=dist
+          # 3. Initialize FRESH config pointing ONLY to 'dist' (Local files)
+          npx cap init "Clinic OS" "com.lovable.clincos" --web-dir=dist
+
+          # 4. (Safety) Ensure 'dist' exists before syncing
+          if [ ! -d "dist" ]; then
+            echo "ERROR: 'dist' folder missing. Build failed."
+            exit 1
           fi
 
+      - name: Create Android Project
+        working-directory: ./source_code
+        run: |
           # Add Android platform
           npx cap add android
           
-          # Sync your web code to the Android project
+          # Sync local 'dist' files into the Android project
           npx cap sync android
 
-      - name: Build APK
+      - name: Build APK (Gradle)
         working-directory: ./source_code/android
         run: |
           chmod +x gradlew
-          # Build the debug APK
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: app-debug-offline
           path: source_code/android/app/build/outputs/apk/debug/app-debug.apk
