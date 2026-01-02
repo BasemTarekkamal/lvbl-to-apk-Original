@@ -80,8 +80,7 @@ jobs:
           name: app-debug-offline
           path: source_code/android/app/build/outputs/apk/debug/app-debug.apk
 
-
-# 1. Upload to 0x0.st (Reliable & Direct Link)
+# 1. Upload to Catbox.moe (Reliable, No Blocking)
       - name: Upload APK Publicly
         id: upload_file
         run: |
@@ -90,13 +89,13 @@ jobs:
           
           echo "Found APK at: $APK_PATH"
           
-          # Upload to 0x0.st using form data (-F)
-          # This service returns the clean URL directly
-          LINK=$(curl -F "file=@$APK_PATH" https://0x0.st)
+          # Upload to Catbox.moe
+          # This service specifically allows script uploads
+          LINK=$(curl -F "reqtype=fileupload" -F "fileToUpload=@$APK_PATH" https://catbox.moe/user/api.php)
           
           echo "Public Link: $LINK"
           
-          # Save the link to output so the next step can use it
+          # Save the link so the next step can use it
           echo "apk_url=$LINK" >> $GITHUB_OUTPUT
 
       # 2. Call Home (Notify n8n)
