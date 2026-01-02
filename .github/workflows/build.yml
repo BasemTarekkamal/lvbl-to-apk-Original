@@ -102,7 +102,7 @@ jobs:
       # 2. Call Home (Notify n8n)
       - name: Notify n8n
         run: |
-          curl -X POST https://YOUR-N8N-DOMAIN/webhook/receive-apk \
+          curl -X POST https://lovble.app.n8n.cloud/webhook/build-request \
           -H "Content-Type: application/json" \
           -d '{
             "email": "${{ inputs.user_email }}",
