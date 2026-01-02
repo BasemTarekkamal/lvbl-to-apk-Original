@@ -6,7 +6,7 @@ on:
       url:
         description: 'The full Website URL (including https://)'
         required: true
-        default: 'https://google.com'
+        default: 'https://clinc-os.lovable.app'
 
 jobs:
   build:
@@ -32,10 +32,12 @@ jobs:
 
       - name: Initialize Project
         run: |
-          # We use the input URL variable provided by the user
           echo "Building for URL: ${{ github.event.inputs.url }}"
           
-          bubblewrap init --manifest="${{ github.event.inputs.url }}" \
+          # We use 'yes |' to accept the JDK/Android SDK licenses and installation prompts automatically.
+          # We pass flags for the App ID so 'yes' doesn't accidentally answer the configuration questions.
+          
+          yes | bubblewrap init --manifest="${{ github.event.inputs.url }}" \
             --directory="." \
             --applicationId="com.app.generated" \
             --chromeFallbackPackage="com.android.chrome" \
