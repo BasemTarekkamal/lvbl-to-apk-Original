@@ -1,7 +1,12 @@
-name: Build APK from Source Code (Capacitor)
+name: Build APK from Lovable GitHub
 
 on:
-  workflow_dispatch: # Run manually
+  workflow_dispatch:
+    inputs:
+      git_repo:
+        description: 'Paste your Lovable GitHub URL here (e.g., https://github.com/User/my-project.git)'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -9,61 +14,61 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Get the code
-      - name: Checkout Source Code
+      - name: Setup Runner
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js (for building the website)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # 3. Setup Java (for building the Android app)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 4. Install Dependencies
+      - name: Clone Your Lovable Code
+        run: |
+          echo "Cloning from: ${{ inputs.git_repo }}"
+          # We clone into a folder named 'source_code'
+          git clone ${{ inputs.git_repo }} source_code
+
       - name: Install Dependencies
+        working-directory: ./source_code
         run: npm install
 
-      # 5. Build the Website (React/Vite)
       - name: Build Web App
+        working-directory: ./source_code
         run: npm run build
 
-      # 6. Initialize Capacitor (The "Magic" Step)
-      # This wraps your web code (in 'dist') into an Android project on the fly.
-      - name: Setup Capacitor & Android
+      - name: Initialize Capacitor (Native Wrapper)
+        working-directory: ./source_code
         run: |
-          # Install Capacitor dependencies if not present
+          # Install Capacitor core packages
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          # Initialize Capacitor (only if not already done)
+          # Initialize Capacitor if not already done
+          # We use a generic ID "com.lovable.app"
           if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
-            npx cap init "My Lovable App" "com.lovable.app" --web-dir=dist
+            npx cap init "My App" "com.lovable.app" --web-dir=dist
           fi
 
           # Add Android platform
-          npx cap add android || true
+          npx cap add android
           
-          # Sync the built web code to the Android project
+          # Sync your web code to the Android project
           npx cap sync android
 
-      # 7. Build the APK using Gradle
-      - name: Build APK (Gradle)
+      - name: Build APK
+        working-directory: ./source_code/android
         run: |
-          cd android
-          # Grant permission to the build script
           chmod +x gradlew
-          # Build the Debug APK
+          # Build the debug APK
           ./gradlew assembleDebug
 
-      # 8. Upload the result
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: source_code/android/app/build/outputs/apk/debug/app-debug.apk
