@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       git_repo:
-        description: 'Paste your Lovable GitHub URL here (e.g., https://github.com/User/my-project.git)'
+        description: 'Paste your Lovable GitHub URL here (e.g., https://github.com/BasemTarekkamal/clinc-os)'
         required: true
         type: string
 
@@ -17,10 +17,13 @@ jobs:
       - name: Setup Runner
         uses: actions/checkout@v4
 
+      # ---------------------------------------------------------
+      # FIX: Updated to Node.js 22 to satisfy Capacitor requirements
+      # ---------------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -49,9 +52,8 @@ jobs:
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
           # Initialize Capacitor if not already done
-          # We use a generic ID "com.lovable.app"
           if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
-            npx cap init "My App" "com.lovable.app" --web-dir=dist
+            npx cap init "Clinic OS" "com.lovable.clincos" --web-dir=dist
           fi
 
           # Add Android platform
