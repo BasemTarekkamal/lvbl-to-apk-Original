@@ -3,53 +3,51 @@ name: Build APK from URL
 on:
   workflow_dispatch:
     inputs:
-      appUrl:
-        description: 'Your Lovable Project URL (NO trailing slash)'
+      url:
+        description: 'The full Website URL (including https://)'
         required: true
-        default: 'https://your-project.lovable.app'
-      appName:
-        description: 'Name of the App'
-        required: true
-        default: 'MyClinicApp'
+        default: 'https://google.com'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
-      # 1. Setup Environment
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      - uses: actions/setup-java@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java (JDK 17)
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. Install the Tool (Bubblewrap)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      # 3. Generate Android Project from URL
-      # We use 'yes |' to auto-accept all default prompts
       - name: Initialize Project
         run: |
-          mkdir app-build
-          cd app-build
-          echo "Generating project for ${{ inputs.appUrl }}..."
-          yes | bubblewrap init --manifest=${{ inputs.appUrl }}/manifest.json --directory=.
-      
-      # 4. Build the APK (Unsigned for Testing)
-      - name: Build APK
-        run: |
-          cd app-build
-          bubblewrap build --skipSigning
+          # We use the input URL variable provided by the user
+          echo "Building for URL: ${{ github.event.inputs.url }}"
+          
+          bubblewrap init --manifest="${{ github.event.inputs.url }}" \
+            --directory="." \
+            --applicationId="com.app.generated" \
+            --chromeFallbackPackage="com.android.chrome" \
+            --answer
 
-      # 5. Upload the Result to GitHub
+      - name: Build APK
+        run: bubblewrap build
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.appName }}-apk
-          path: app-build/*.apk
-          retention-days: 1
+          name: app-release
+          path: |
+            *.apk
+            *.aab
