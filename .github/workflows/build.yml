@@ -79,3 +79,32 @@ jobs:
         with:
           name: app-debug-offline
           path: source_code/android/app/build/outputs/apk/debug/app-debug.apk
+
+
+
+          # [ ... previous build steps ... ]
+
+      # 1. Upload to Transfer.sh (Free, no login required)
+      - name: Upload APK Publicly
+        id: upload_file
+        run: |
+          # Find the APK file
+          APK_PATH=$(find . -name "*.apk" | head -n 1)
+          
+          # Upload it
+          echo "Uploading $APK_PATH..."
+          LINK=$(curl --upload-file "$APK_PATH" https://transfer.sh/app-debug.apk)
+          
+          # Save the link
+          echo "Public Link: $LINK"
+          echo "apk_url=$LINK" >> $GITHUB_OUTPUT
+
+      # 2. Call Home (Notify n8n)
+      - name: Notify n8n
+        run: |
+          curl -X POST https://YOUR-N8N-DOMAIN/webhook/receive-apk \
+          -H "Content-Type: application/json" \
+          -d '{
+            "email": "${{ inputs.user_email }}",
+            "download_link": "${{ steps.upload_file.outputs.apk_url }}"
+          }'
