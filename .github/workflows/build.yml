@@ -81,22 +81,24 @@ jobs:
           path: source_code/android/app/build/outputs/apk/debug/app-debug.apk
 
 
+# [ ... previous build steps ... ]
 
-          # [ ... previous build steps ... ]
-
-      # 1. Upload to Transfer.sh (Free, no login required)
+      # 1. NEW Upload Step (Using 0x0.st - More Reliable)
       - name: Upload APK Publicly
         id: upload_file
         run: |
           # Find the APK file
           APK_PATH=$(find . -name "*.apk" | head -n 1)
           
-          # Upload it
-          echo "Uploading $APK_PATH..."
-          LINK=$(curl --upload-file "$APK_PATH" https://transfer.sh/app-debug.apk)
+          echo "Found APK at: $APK_PATH"
           
-          # Save the link
+          # Upload to 0x0.st using Form Data
+          # This returns a clean URL like https://0x0.st/abcd.apk
+          LINK=$(curl -F "file=@$APK_PATH" https://0x0.st)
+          
           echo "Public Link: $LINK"
+          
+          # Save the link so the next step can use it
           echo "apk_url=$LINK" >> $GITHUB_OUTPUT
 
       # 2. Call Home (Notify n8n)
