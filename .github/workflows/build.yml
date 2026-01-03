@@ -94,3 +94,16 @@ jobs:
             "email": "${{ inputs.user_email }}",
             "download_link": "${{ steps.upload_file.outputs.apk_url }}"
           }'
+      
+      # 3. Signal n8n that workflow is complete (REQUIRED for dispatchAndWait)
+      - name: Notify n8n Completion
+        if: always()
+        run: |
+          if [ -n "${{ inputs.resumeUrl }}" ]; then
+            curl -X POST "${{ inputs.resumeUrl }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "status": "${{ job.status }}",
+              "apk_url": "${{ steps.upload_file.outputs.apk_url }}"
+            }'
+          fi
