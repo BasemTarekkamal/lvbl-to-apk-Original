@@ -6,6 +6,10 @@ on:
         description: 'Your Lovable GitHub URL'
         required: true
         default: 'https://github.com/BasemTarekkamal/clinc-os'
+      app_name:
+        description: 'App Name'
+        required: true
+        default: 'My App'
       resumeUrl:
         description: 'Resume URL for n8n'
         required: false
@@ -43,8 +47,9 @@ jobs:
           rm -f capacitor.config.ts capacitor.config.json
           # 2. Install Capacitor packages if missing
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          # 3. Initialize FRESH config pointing ONLY to 'dist' (Local files)
-          npx cap init "Clinic OS" "com.lovable.clincos" --web-dir=dist
+          # 3. Initialize FRESH config with DYNAMIC app name and package ID
+          PACKAGE_ID=$(echo "${{ inputs.app_name }}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+          npx cap init "${{ inputs.app_name }}" "com.lovable.${PACKAGE_ID}" --web-dir=dist
           # 4. (Safety) Ensure 'dist' exists before syncing
           if [ ! -d "dist" ]; then
             echo "ERROR: 'dist' folder missing. Build failed."
@@ -104,6 +109,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "status": "${{ job.status }}",
-              "apk_url": "${{ steps.upload_file.outputs.apk_url }}"
+              "apk_url": "${{ steps.upload_file.outputs.apk_url }}",
+              "app_name": "${{ inputs.app_name }}"
             }'
           fi
