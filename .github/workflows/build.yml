@@ -73,8 +73,10 @@ jobs:
           npx cap sync android
       - name: Add google-services.json
         working-directory: ./source_code
+        env:
+          GOOGLE_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+          echo "$GOOGLE_JSON" > android/app/google-services.json
       - name: Build APK (Gradle)
         working-directory: ./source_code/android
         run: |
