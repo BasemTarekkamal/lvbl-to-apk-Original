@@ -48,8 +48,16 @@ jobs:
           # 2. Install Capacitor packages if missing
           npm install @capacitor/core @capacitor/cli @capacitor/android
           # 3. Initialize FRESH config with DYNAMIC app name and package ID
-          PACKAGE_ID=$(echo "${{ inputs.app_name }}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
-          npx cap init "${{ inputs.app_name }}" "com.lovable.${PACKAGE_ID}" --web-dir=dist
+          # 3. Parse App Name and Initialize
+          FINAL_APP_NAME="${{ inputs.app_name }}"
+          if [ "$FINAL_APP_NAME" == "My App" ]; then
+            REPO_NAME=$(basename "${{ inputs.git_repo }}" .git)
+            FINAL_APP_NAME=$REPO_NAME
+          fi
+          echo "Using App Name: $FINAL_APP_NAME"
+
+          PACKAGE_ID=$(echo "$FINAL_APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+          npx cap init "$FINAL_APP_NAME" "com.lovable.${PACKAGE_ID}" --web-dir=dist
           # 4. (Safety) Ensure 'dist' exists before syncing
           if [ ! -d "dist" ]; then
             echo "ERROR: 'dist' folder missing. Build failed."
@@ -63,6 +71,10 @@ jobs:
           
           # Sync local 'dist' files into the Android project
           npx cap sync android
+      - name: Add google-services.json
+        working-directory: ./source_code
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
       - name: Build APK (Gradle)
         working-directory: ./source_code/android
         run: |

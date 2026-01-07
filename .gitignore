@@ -1,0 +1,11 @@
+# Sensitive Config
+google-services.json
+.DS_Store
+
+# Build Artifacts
+source_code/
+android/
+node_modules/
+dist/
+build/
+apk/
