@@ -47,12 +47,12 @@ jobs:
           rm -f capacitor.config.ts capacitor.config.json
           # 2. Install Capacitor packages if missing
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          # 3. Decode Google Services JSON (Base64)
-          mkdir -p android/app
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json
+          # 3. Decode Google Services JSON (Base64) to TEMP file
+          # We decode to root first because 'android/app' might be wiped later
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > google-services.json
 
           # 4. Extract Package ID from JSON to ensure match
-          PACKAGE_ID=$(jq -r '.client[0].client_info.android_client_info.package_name' android/app/google-services.json)
+          PACKAGE_ID=$(jq -r '.client[0].client_info.android_client_info.package_name' google-services.json)
           echo "Using Package ID from JSON: $PACKAGE_ID"
           
           if [ -z "$PACKAGE_ID" ] || [ "$PACKAGE_ID" == "null" ]; then
@@ -71,8 +71,14 @@ jobs:
       - name: Create Android Project
         working-directory: ./source_code
         run: |
+          # Clean existing android folder to force fresh generation
+          rm -rf android
+          
           # Add Android platform
           npx cap add android
+          
+          # Move Google Services JSON to correct location
+          mv google-services.json android/app/google-services.json
           
           # Sync local 'dist' files into the Android project
           npx cap sync android
