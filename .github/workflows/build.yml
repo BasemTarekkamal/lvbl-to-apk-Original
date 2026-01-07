@@ -47,17 +47,22 @@ jobs:
           rm -f capacitor.config.ts capacitor.config.json
           # 2. Install Capacitor packages if missing
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          # 3. Initialize FRESH config with DYNAMIC app name and package ID
-          # 3. Parse App Name and Initialize
-          FINAL_APP_NAME="${{ inputs.app_name }}"
-          if [ "$FINAL_APP_NAME" == "My App" ]; then
-            REPO_NAME=$(basename "${{ inputs.git_repo }}" .git)
-            FINAL_APP_NAME=$REPO_NAME
-          fi
-          echo "Using App Name: $FINAL_APP_NAME"
+          # 3. Decode Google Services JSON (Base64)
+          mkdir -p android/app
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json
 
-          PACKAGE_ID=$(echo "$FINAL_APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
-          npx cap init "$FINAL_APP_NAME" "com.lovable.${PACKAGE_ID}" --web-dir=dist
+          # 4. Extract Package ID from JSON to ensure match
+          PACKAGE_ID=$(jq -r '.client[0].client_info.android_client_info.package_name' android/app/google-services.json)
+          echo "Using Package ID from JSON: $PACKAGE_ID"
+          
+          if [ -z "$PACKAGE_ID" ] || [ "$PACKAGE_ID" == "null" ]; then
+             echo "ERROR: Could not extract package_name from google-services.json"
+             exit 1
+          fi
+
+          # 5. Initialize Capacitor with strict Package ID
+          FINAL_APP_NAME="${{ inputs.app_name }}"
+          npx cap init "$FINAL_APP_NAME" "$PACKAGE_ID" --web-dir=dist
           # 4. (Safety) Ensure 'dist' exists before syncing
           if [ ! -d "dist" ]; then
             echo "ERROR: 'dist' folder missing. Build failed."
@@ -71,12 +76,7 @@ jobs:
           
           # Sync local 'dist' files into the Android project
           npx cap sync android
-      - name: Add google-services.json
-        working-directory: ./source_code
-        env:
-          GOOGLE_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          echo "$GOOGLE_JSON" > android/app/google-services.json
+
       - name: Build APK (Gradle)
         working-directory: ./source_code/android
         run: |
